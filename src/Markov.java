@@ -46,13 +46,17 @@ public class Markov {
             FileInputStream file_in0 = new FileInputStream(filePath0);
             BufferedReader reader0  = new BufferedReader(new InputStreamReader( file_in0, Charset.forName("UTF-8")));
             String line = "";
+            ArrayList<String> allText = new ArrayList<>();
 
             while ((line = reader0.readLine()) != null) {
                 if (line.compareTo("")!=0) {
-                    addWords(line);
+                    String[] allLine = line.split(" ");
+                    for(int j = 0; j < allLine.length; j++){
+                        allText.add(allLine[j]);
+                    }
                 }
             }
-
+            makeMarkov(allText);
             reader0.close();
         }
 
@@ -70,6 +74,46 @@ public class Markov {
         }
     }
 
+    public static void makeMarkov(ArrayList<String> text) {
+
+        // Loop through each word, check if it's already added
+        // if its added, then get the suffix vector and add the word
+        // if it hasn't been added then add the word to the list
+        // if its the first or last word then select the _start / _end key
+        boolean startSentence = true;
+        for (int i=0; i<text.size(); i++) {
+            String word = text.get(i);
+            // Add the start and end words to their own
+            if (startSentence) {
+
+                ArrayList<String> startWords = markovChain.get("_start");
+                startWords.add(word);
+                System.out.println("START IS" + word);
+                startSentence = false;
+            } else if (word.substring(word.length() - 1).compareTo(".") == 0
+                    || word.substring(word.length() - 1).compareTo("!") == 0
+                    || word.substring(word.length() - 1).compareTo("?") == 0) {
+
+                ArrayList<String> endWords = markovChain.get("_end");
+                endWords.add(word);
+                startSentence = true;
+                System.out.println("END IS" + word);
+
+            }
+
+            ArrayList<String> suffix = markovChain.get(word);
+
+            if (suffix == null) {
+                suffix = new ArrayList<>();
+                suffix.add(word);
+                markovChain.put(word, suffix);
+            } else {
+                suffix.add(word);
+                markovChain.put(word, suffix);
+            }
+            System.out.println(word);
+        }
+    }
     /*
      * Add words
      */
@@ -113,6 +157,7 @@ public class Markov {
                 ArrayList<String> endWords = markovChain.get("_end");
 
                 endWords.add(words[i]);
+
                 System.out.println("END IS" + words[i]);
 
             } else {
@@ -140,7 +185,6 @@ public class Markov {
     /*
      * Generate a markov phrase
      */
-    //public static void generateTweet() {
     public static String generateTweet() {
         // Vector to hold the phrase
         //Vector<String> newPhrase = new Vector<String>();
@@ -164,22 +208,26 @@ public class Markov {
             while (charsLeft < 140) {
                 System.out.println(nextWord);
                 if ( nextWord.compareTo("") != 0 ) {
-                    //Vector<String> wordSelection = markovChain.get(nextWord);
+                    System.out.println("1");
                     ArrayList<String> wordSelection = markovChain.get(nextWord);
-
+                    System.out.println(wordSelection);
                     //try {
                     int wordSelectionLen = wordSelection.size();
                     nextWord = wordSelection.get(rnd.nextInt(wordSelectionLen));
 
                     if ( nextWord.compareTo("") != 0 ) {
+                        System.out.println("2");
                         newPhrase.add(nextWord);
                         charsLeft  = charsLeft + nextWord.length();
                     }
                     else {
                         if ( wordSelectionLen <= 1 ) {
+                            System.out.println("3");
                             //break;
                         }
+                        System.out.println("6");
                         while ( nextWord.compareTo("")==0 ) {
+                            System.out.println("4");
                             nextWord = wordSelection.get(rnd.nextInt(wordSelectionLen));
                         }
 
@@ -189,7 +237,7 @@ public class Markov {
                     //}
                 }
                 else {
-
+                    System.out.println("5");
                     //break;
                 }
 
@@ -198,8 +246,8 @@ public class Markov {
             }
         }
         catch (Exception e) {
-            //System.out.println("Exception caught: " + e);
-            //System.out.println("Next word was: [" + nextWord + "]");
+            System.out.println("Exception caught: " + e);
+            System.out.println("Next word was: [" + nextWord + "]");
         }
 
         String newPhraseString = newPhrase.toString();
