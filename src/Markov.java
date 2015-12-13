@@ -1,14 +1,11 @@
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
+import twitter4j.*;
+import twitter4j.api.TrendsResources;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
-import java.util.Hashtable;
-import java.util.Random;
 import java.nio.charset.Charset;
 
 public class Markov {
@@ -23,20 +20,45 @@ public class Markov {
         // Create the first two entries (k:_start, k:_end)
         markovChain.put("_start", new ArrayList<>());
         markovChain.put("_end", new ArrayList<>());
-        String filePath0 = args[0];
-        FileInputStream file_in0 = new FileInputStream(filePath0);
-        BufferedReader reader0  = new BufferedReader(new InputStreamReader( file_in0, Charset.forName("UTF-8")));
-        String line;
-        while ((line = reader0.readLine()) != null) {
-            if (line.compareTo("")!=0) {
-                addWords(line);
+        //get the trending topics for boston via the twitter api.
+        try {
+            List<String> tweets = getTweets();
+            for(String tweet : tweets) {
+                addWords(tweet);
+            }
+            String tweet = generateTweet();
+            System.out.println(tweet);
+//            twitter.updateStatus(tweet);
+        }
+        catch (NoSuchElementException e) {
+            System.out.println(e.getMessage());
+        }
+
+    }
+    //Finds a suitable trending topic to generate text from. Tweets must be from a trending hashtag that has the maximum
+    //number of popular tweets (15) returned from the query
+    private static List<String> getTweets() throws TwitterException, NoSuchElementException{
+        //Request trends for boston (using boston's geoID of 2367105)
+        Trend[] topTrends = twitter.getPlaceTrends(2367105).getTrends();
+        Query query = new Query();
+        query.setLang("en");
+        query.setResultType(Query.ResultType.popular);
+        for(Trend t : topTrends) {
+            query.setQuery(t.getQuery());
+            List<Status> results = twitter.search(query).getTweets();
+            if (results.size() == 15) {
+                System.out.println(query.getQuery());
+                List<String> tweetText = new ArrayList<>();
+                for(Status s: results) {
+                    tweetText.add(s.getText());
+                    System.out.println(s.getText());
+                }
+                return tweetText;
             }
         }
-        reader0.close();
-        String tweet = generateTweet();
-        System.out.println(tweet);
-//        twitter.updateStatus(tweet);
+        throw new NoSuchElementException("no topic fit for analysis :(");
     }
+
     /*
      * Add words to markovChain and create suffix lists
      */
@@ -98,8 +120,7 @@ public class Markov {
         String newPhraseString = newPhrase.toString();
         String strToOutput = newPhraseString.substring(1, newPhraseString.length()-1);
         strToOutput = strToOutput.replace(",", "");
-        strToOutput = strToOutput.replace("@", "#");
-        System.out.println(strToOutput.length());
+        strToOutput = strToOutput.replace("@", "#"); //just to prevent pinging people by accident
         return strToOutput;
     }
 }
