@@ -1,12 +1,6 @@
 import twitter4j.*;
-import twitter4j.api.TrendsResources;
-
 import java.util.*;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.FileInputStream;
-import java.nio.charset.Charset;
 
 public class Markov {
     // Hashmap storing each word and its suffixes
@@ -17,9 +11,8 @@ public class Markov {
     private static ArrayList<String> lastWordSuffix;
 
     public static void main(String[] args) throws IOException, TwitterException {
-        // Create the first two entries (k:_start, k:_end)
+        //create the beginnings of the markov chain
         markovChain.put("_start", new ArrayList<>());
-        markovChain.put("_end", new ArrayList<>());
         //get the trending topics for boston via the twitter api.
         try {
             List<String> tweets = getTweets();
@@ -28,7 +21,7 @@ public class Markov {
             }
             String tweet = generateTweet();
             System.out.println(tweet);
-            twitter.updateStatus(tweet);
+//            twitter.updateStatus(tweet);
         }
         catch (NoSuchElementException e) {
             System.out.println(e.getMessage());
@@ -43,7 +36,7 @@ public class Markov {
         Query query = new Query();
         query.setLang("en");
         query.setCount(100);
-        query.setResultType(Query.ResultType.mixed);
+        query.setResultType(Query.ResultType.popular);
         for(Trend t : topTrends) {
             query.setQuery(t.getQuery());
             List<Status> results = twitter.search(query).getTweets();
@@ -75,9 +68,6 @@ public class Markov {
             if (i == 0) {
                 ArrayList<String> startWords = markovChain.get("_start");
                 startWords.add(words[i]);
-            } else if (i == words.length-1) {
-                ArrayList<String> endWords = markovChain.get("_end");
-                endWords.add(words[i]);
             }
             ArrayList<String> suffix = markovChain.get(words[i]);
             if (suffix == null) {
@@ -101,27 +91,22 @@ public class Markov {
      */
     public static String generateTweet() {
         // Array to hold the phrase
-        ArrayList<String> newPhrase = new ArrayList<>();
+        String newPhrase = "";
         // String for the next word
         String nextWord;
         // Select the first word
         ArrayList<String> startWords = markovChain.get("_start");
         int startWordsLen = startWords.size();
-        int charsLeft = 0;
         nextWord = startWords.get(rnd.nextInt(startWordsLen));
 //         Keep looping through the words until we've reached the end
-        while (charsLeft + nextWord.length() < 140) {
-            newPhrase.add(nextWord);
-            charsLeft  = charsLeft + nextWord.length() + 1;
+        while (newPhrase.length() + nextWord.length() + 1 < 140) {
+            newPhrase = newPhrase + " " + nextWord;
             ArrayList<String> wordSelection = markovChain.get(nextWord);
             int wordSelectionLen = wordSelection.size();
             nextWord = wordSelection.get(rnd.nextInt(wordSelectionLen));
 
         }
-        String newPhraseString = newPhrase.toString();
-        String strToOutput = newPhraseString.substring(1, newPhraseString.length()-1);
-        strToOutput = strToOutput.replace(",", "");
-        strToOutput = strToOutput.replace("@", "#"); //just to prevent pinging people by accident
-        return strToOutput;
+        newPhrase = newPhrase.replace("@", "#"); //just to prevent pinging people by accident
+        return newPhrase;
     }
 }
