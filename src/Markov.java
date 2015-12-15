@@ -28,7 +28,7 @@ public class Markov {
             }
             String tweet = generateTweet();
             System.out.println(tweet);
-//            twitter.updateStatus(tweet);
+            twitter.updateStatus(tweet);
         }
         catch (NoSuchElementException e) {
             System.out.println(e.getMessage());
@@ -42,11 +42,12 @@ public class Markov {
         Trend[] topTrends = twitter.getPlaceTrends(2367105).getTrends();
         Query query = new Query();
         query.setLang("en");
-        query.setResultType(Query.ResultType.popular);
+        query.setCount(100);
+        query.setResultType(Query.ResultType.mixed);
         for(Trend t : topTrends) {
             query.setQuery(t.getQuery());
             List<Status> results = twitter.search(query).getTweets();
-            if (results.size() == 15) {
+            if (results.size() >= 15) {
                 System.out.println(query.getQuery());
                 List<String> tweetText = new ArrayList<>();
                 for(Status s: results) {
